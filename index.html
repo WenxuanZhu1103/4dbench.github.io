@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="4D-Bench: Benchmarking Multi-modal Large Language Models for 4D Object Understanding">
+  <meta name="keywords" content="4D-Bench, 4D Object Understanding, Multi-modal Large Language Models">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4D-Bench: Benchmarking Multi-modal Large Language Models for 4D Object Understanding</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <!-- <link rel="icon" href="./static/images/favicon.svg"> -->
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  
+  <style>
+    /* 基本表格样式 */
+    .results-table {
+      width: 100%; /* 表格宽度为100% */
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 0.95em;
+      border: 1px solid #ddd;
+      table-layout: auto; /* 改回auto布局以允许列宽自适应内容 */
+    }
+    
+    /* 表格容器样式 */
+    .table-container {
+      margin-bottom: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 100%;
+      overflow-x: visible; /* 不显示滚动条 */
+    }
+    
+    /* 移除特定表格的宽度限制 */
+    .qa-table, .qa-table-container, .qa-caption-container {
+      width: 100%;
+    }
+    
+    /* 调整表格单元格样式 */
+    .results-table th, .results-table td {
+      padding: 8px 5px;
+      text-align: center;
+      border: 1px solid #ddd;
+      word-wrap: break-word;
+      overflow: hidden;
+    }
+    
+    /* 模型名称列靠左对齐，自适应内容宽度 */
+    .results-table th:nth-child(2), .results-table td:nth-child(2) {
+      text-align: left;
+      padding-left: 10px;
+      width: auto; /* 自适应内容宽度 */
+      white-space: normal; /* 允许文本换行 */
+      /* 移除min-width和max-width限制 */
+    }
+    
+    /* 行号列宽度固定 */
+    .results-table th:first-child, .results-table td:first-child {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+    }
+    
+    /* 其他列宽度设置 */
+    .results-table th:not(:first-child):not(:nth-child(2)), 
+    .results-table td:not(:first-child):not(:nth-child(2)) {
+      min-width: 60px;
+      width: auto; /* 自适应内容 */
+    }
+    
+    /* 修改表头样式 */
+    .results-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      color: #333;
+      font-size: 0.9em;
+      white-space: normal; /* 允许表头文字换行 */
+      height: auto;
+      vertical-align: middle;
+      padding: 8px 4px;
+    }
+    
+    /* 模型名称样式 */
+    .model-name {
+      color: #0066cc;
+      font-weight: bold;
+      font-size: 0.95em;
+      display: block;
+      white-space: normal; /* 允许换行 */
+      /* 移除overflow和text-overflow限制 */
+    }
+    
+    /* 机构名称样式 */
+    .model-affiliation {
+      display: block;
+      font-size: 0.75em;
+      font-weight: normal;
+      color: #666;
+      margin-top: 2px;
+      white-space: normal; /* 允许换行 */
+      /* 移除overflow和text-overflow限制 */
+    }
+    
+    /* 数据单元格样式 */
+    .results-table tbody td:not(:first-child):not(:nth-child(2)) {
+      white-space: normal; /* 允许换行 */
+      font-size: 0.9em;
+    }
+    
+    /* 其他样式保持不变 */
+    .results-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .results-table tr:nth-child(odd) {
+      background-color: #ffffff;
+    }
+    .results-table tr:hover {
+      background-color: #f1f1f1;
+    }
+    .results-table thead tr {
+      background-color: #e6e6e6;
+    }
+    /* 最佳值加粗显示 */
+    .results-table .highlight {
+      /* 移除font-weight: bold; */
+      /* 可以保留其他highlight样式，如颜色等 */
+    }
+    /* GPT指标名称为绿色 */
+    .results-table .green-text {
+      color: green;
+      font-weight: bold;
+    }
+    /* GPT-4o的GPT指标值为灰色 */
+    .results-table .gray-text {
+      color: gray;
+    }
+    /* Human行背景色 */
+    .results-table .gray-row {
+      background-color: #f2f2f2;
+    }
+    /* 行号样式 */
+    .results-table .row-number {
+      width: 40px;
+      text-align: center;
+      color: #666;
+      font-weight: normal;
+    }
+    
+    /* 为表格的最后一列添加加粗样式 */
+    .results-table td:last-child {
+      font-weight: bold;
+    }
+    
+    /* 确保其他列不加粗（覆盖之前可能的highlight样式） */
+    .results-table td:not(:last-child) {
+      font-weight: normal;
+    }
+  </style>
+  
+  <!-- Load benchmark data and rendering scripts -->
+  <script src="./static/js/benchmark_data.js"></script>
+  <script src="./static/js/render_tables.js"></script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <!-- <a class="navbar-item" href="https://keunhong.com">
+      <span class="icon">
+          <i class="fas fa-home"></i>
+      </span>
+      </a> -->
+
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://hi-zhengcheng.github.io/vividzoo/">
+            VividZoo
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">4D-Bench: Benchmarking Multi-modal Large Language Models for 4D Object Understanding</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="#">Wenxuan Zhu</a><sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="#">Bing Li</a><sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="#">Cheng Zheng</a><sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="#">Jinjie Mai</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="#">Jun Chen</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="#">Letian Jiang</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="#">Abdullah Hamdi</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="#">Sara Rojas Martinez</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="#">Chia-Wen Lin</a><sup>3</sup>,</span>
+            <span class="author-block">
+              <a href="#">Mohamed Elhoseiny</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="#">Bernard Ghanem</a><sup>1</sup></span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>King Abdullah University of Science and Technology,</span>
+            <span class="author-block"><sup>2</sup>University of Oxford,</span>
+            <span class="author-block"><sup>3</sup>National Tsing Hua University</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2011.12948"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv" style="color: #B31B1B;"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/google/nerfies"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github" style="color: #6e5494;"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <!-- Dataset Link with alternative icon -->
+              <span class="link-block">
+                <a href="https://github.com/google/nerfies/releases/tag/0.1"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-database" style="color: #FFD21E;"></i>
+                  </span>
+                  <span>Data</span>
+                </a>
+              </span>
+              <!-- 4D Object QA Leaderboard Link -->
+              <span class="link-block">
+                <a href="#qa-leaderboard"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-chart-bar" style="color: #4CAF50;"></i>
+                  </span>
+                  <span>4D Object QA Leaderboard</span>
+                </a>
+              </span>
+              <!-- 4D Captioning Leaderboard Link -->
+              <span class="link-block">
+                <a href="#captioning-leaderboard"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-chart-line" style="color: #2196F3;"></i>
+                  </span>
+                  <span>4D Captioning Leaderboard</span>
+                </a>
+              </span>
+              <!-- 4D Object QA Examples -->
+              <span class="link-block">
+                <a href="#4d-object-qa-example"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-cube" style="color: #FF9800;"></i>
+                  </span>
+                  <span>4D Object QA Examples</span>
+                </a>
+              </span>
+              <!-- 在按钮区域添加新的Captioning Example按钮 -->
+              <span class="link-block">
+                <a href="#4d-captioning-example"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-comment-dots" style="color: #9C27B0;"></i>
+                  </span>
+                  <span>4D Object Captioning Example</span>
+                </a>
+              </span>
+              <!-- 在按钮区域添加新的Pipeline按钮 -->
+              <span class="link-block">
+                <a href="#4d-bench-pipeline"
+                    class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-cogs" style="color: #3F51B5;"></i>
+                  </span>
+                  <span>4D-Bench Construction Pipeline</span>
+                </a>
+              </span>
+              <!-- 在按钮区域添加新的Statistics按钮 -->
+              <span class="link-block">
+                <a href="#4d-statistics"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-chart-pie" style="color: #E91E63;"></i>
+                  </span>
+                  <span>4D-Bench Statistics</span>
+                </a>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Multimodal Large Language Models (MLLMs) have demonstrated impressive 2D image/video understanding capabilities.
+            However, there are no publicly standardized benchmarks to assess the abilities of MLLMs in understanding the 4D objects (3D objects with temporal evolution over time).
+            In this paper, we introduce 4D-Bench, the first benchmark to evaluate the capabilities of MLLMs in 4D object understanding, featuring tasks in 4D object Question Answering (4D object QA) and 4D object captioning.
+            4D-Bench provides 4D objects with diverse categories, high-quality annotations, and tasks necessitating multi-view spatial-temporal understanding, different from existing 2D image/video-based benchmarks.
+            With 4D-Bench, we evaluate a wide range of open-source and closed-source MLLMs.
+            The results from the 4D object captioning experiment indicate that MLLMs generally exhibit weaker temporal understanding compared to their appearance understanding, notably, while open-source models approach closed-source performance in appearance understanding, they show larger performance gaps in temporal understanding.
+            4D object QA yields surprising findings: even with simple single-object videos, MLLMs perform poorly, with state-of-the-art GPT-4o achieving only 63% accuracy compared to the human baseline of 91%.
+            These findings highlight a substantial gap in 4D object understanding and the need for further advancements in MLLMs.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    <!-- Results Tables -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full">
+        <h2 class="title is-3">Leaderboard</h2>
+        
+        <!-- 4D Object QA Results (现在放在前面) -->
+        <h3 class="title is-4" id="qa-leaderboard">4D Object Question Answering Leaderboard</h3>
+        <div class="table-container">
+          <div id="qa-table-container"></div>
+        </div>
+        <div class="table-caption" id="qa-caption-container"></div>
+        
+        <!-- 4D Object Captioning Results (现在放在后面) -->
+        <h3 class="title is-4" id="captioning-leaderboard">4D Object Captioning Leaderboard</h3>
+        <div class="table-container">
+          <div id="captioning-table-container"></div>
+        </div>
+        <div class="table-caption" id="captioning-caption-container"></div>
+      </div>
+    </div>
+    <!--/ Results Tables -->
+
+
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- 4D Object QA Examples -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3" id="4d-object-qa-example">4D Object QA Examples</h2>
+        
+        <!-- Example 1 -->
+        <div class="content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <video id="robot-qa" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/robot_qa.mp4" type="video/mp4">
+          </video>
+          <div class="qa-example" style="margin-top: 15px; text-align: left;">
+            <p style="font-size: 1.2em; color: #666; margin-bottom: 10px;">
+              Q: What does the robot's right hand turn into?
+            </p>
+            <p style="margin: 0; white-space: nowrap; overflow-x: auto; padding-bottom: 10px;">
+              <span style="margin-right: 30px; color: #2E7D32; font-weight: bold;">
+                <strong>(A)</strong> Into the leg.
+              </span>
+              <span style="margin-right: 30px;">
+                <strong>(B)</strong> Into the tail.
+              </span>
+              <span style="margin-right: 30px;">
+                <strong>(C)</strong> Into the sword.
+              </span>
+              <span>
+                <strong>(D)</strong> Into the wing.
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Example 2 -->
+        <div class="content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <video id="cigarette-qa" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/cigarette_qa.mp4" type="video/mp4">
+          </video>
+          <div class="qa-example" style="margin-top: 15px; text-align: left;">
+            <p style="font-size: 1.2em; color: #666; margin-bottom: 10px;">
+              Q: How many burnt cigarettes are there?
+            </p>
+            <p style="margin: 0; white-space: nowrap; overflow-x: auto; padding-bottom: 10px;">
+              <span style="margin-right: 30px;">
+                <strong>(A)</strong> Nine burnt cigarettes
+              </span>
+              <span style="margin-right: 30px;">
+                <strong>(B)</strong> Zero burnt cigarettes
+              </span>
+              <span style="margin-right: 30px; color: #2E7D32; font-weight: bold;">
+                <strong>(C)</strong> Three burnt cigarettes
+              </span>
+              <span>
+                <strong>(D)</strong> Two burnt cigarettes
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 在QA Examples后添加Captioning Example部分 -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- 4D Object Captioning Example -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3" id="4d-captioning-example">4D Object Captioning Example</h2>
+        <div class="content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <video id="knight-caption" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/knight_caption.mp4" type="video/mp4">
+          </video>
+          <div class="caption-example" style="margin-top: 15px; text-align: left;">
+            <p style="font-size: 1.2em; color: #666; margin-bottom: 10px;">
+              Caption:
+            </p>
+            <p style="margin: 0; line-height: 1.6; color: #333; padding: 10px 0;">
+              A cartoon-style knight character wears a rounded helmet adorned with a golden unicorn horn, ornate armor with bluish-green shoulder plates edged in bright gold, and boots with golden accents. Draped in a purple cape, the knight is wielding a weapon, tossing it into the air, and catching it in a playful, skillful display.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- 4D-Bench Pipeline -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3" id="4d-bench-pipeline">4D-Bench Construction Pipeline</h2>
+        <div class="content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <figure class="image">
+            <img src="./static/images/dataset.png" alt="4D-Bench Construction Pipeline" style="width: 100%; height: auto; margin-bottom: 20px;">
+          </figure>
+          <div class="pipeline-description" style="text-align: left; line-height: 1.6;">
+            <p>
+              We render multi-view videos for 4D objects from Objaverse-XL, followed by comprehensive filtering and annotation processes. Our pipeline includes:
+            </p>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+              <li><strong>Multi-view Video Rendering:</strong> Creating dynamic visualizations of 3D objects with temporal evolution</li>
+              <li><strong>Motion and Visual Quality Filtering:</strong> Ensuring only high-quality 4D objects with meaningful motion are included</li>
+              <li><strong>Multi-stage Annotation:</strong>For the dataset annotation, captions are purely human-created to ensure descriptive accuracy, while QA pairs are generated through an efficient hybrid approach combining MLLMs for initial generation and human experts for validation and refinement.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 在其他部分后添加Statistics部分 -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- 4D Statistics -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3" id="4d-statistics">4D-Bench Statistics</h2>
+        <div class="content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <!-- 描述文本 -->
+          <div class="dataset-description" style="text-align: left; margin-bottom: 25px; line-height: 1.6;">
+            <p>
+              The 4D-Bench dataset comprises two main tasks with comprehensive annotations:
+            </p>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+              <li><strong>4D Object Question Answering:</strong> A collection of 751 question-answer pairs spanning 736 unique 4D objects, designed to evaluate spatial-temporal reasoning capabilities.</li>
+              <li><strong>4D Object Captioning:</strong> A set of 580 4D objects, each accompanied by five human-annotated captions that describe both static appearance and dynamic behaviors.</li>
+            </ul>
+          </div>
+          
+          <!-- 使用columns来横向排列图片 -->
+          <div class="columns is-centered is-variable is-2">
+            <!-- 左侧图片 -->
+            <div class="column">
+              <figure class="image">
+                <img src="./static/images/caption_sta.png" alt="Caption Statistics" style="width: 100%; height: auto;">
+              </figure>
+            </div>
+            <!-- 右侧图片 -->
+            <div class="column">
+              <figure class="image">
+                <img src="./static/images/qa_sta.png" alt="QA Statistics" style="width: 100%; height: auto;">
+              </figure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+<!-- <section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{park2021nerfies,
+  author    = {Park, Keunhong and Sinha, Utkarsh and Barron, Jonathan T. and Bouaziz, Sofien and Goldman, Dan B and Seitz, Steven M. and Martin-Brualla, Ricardo},
+  title     = {4D-Bench: Benchmarking Multi-modal Large Language Models for 4D Object Understanding},
+  journal   = {ICCV},
+  year      = {2021},
+}</code></pre>
+  </div>
+</section> -->
+
+
+
+</body>
+</html>
